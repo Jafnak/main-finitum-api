@@ -10,6 +10,7 @@ const schema = mongoose.Schema({
     type: String,
     enum: ["Study Group", "Gaming", "Health & Fitness"],
   },
+  profileImage: { type: String },
 });
 let userModel = mongoose.model("users", schema);
 module.exports = { userModel };

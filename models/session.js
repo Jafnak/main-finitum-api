@@ -8,6 +8,7 @@ const sessionSchema = new mongoose.Schema({
     required: true,
   },
   friendEmail: { type: String, required: true },
+  createdBy: { type: String, required: true }, // Add this field
   // Creator of the session
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Users in the session
   startTime: { type: Date, default: Date.now }, // When the session starts
