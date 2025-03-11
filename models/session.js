@@ -13,14 +13,29 @@ const sessionSchema = new mongoose.Schema({
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Users in the session
   startTime: { type: Date, default: Date.now }, // When the session starts
   duration: { type: Number, required: true }, // In minutes (e.g., 60 min)
-  endTime: { type: Date, required: false }, // Automatically calculate: startTime + duration
+  endTime: { type: Date },
   isActive: { type: Boolean, default: true }, // Whether session is still active
 });
 
-// Auto-set endTime based on duration
+// Calculate endTime before saving
 sessionSchema.pre("save", function (next) {
-  this.endTime = new Date(this.startTime.getTime() + this.duration * 60000);
+  if (
+    this.isNew ||
+    this.isModified("startTime") ||
+    this.isModified("duration")
+  ) {
+    this.endTime = new Date(this.startTime.getTime() + this.duration * 60000);
+  }
   next();
+});
+
+// Virtual property to check if session is active
+sessionSchema.virtual("status").get(function () {
+  const now = new Date();
+  if (now > this.endTime) {
+    return "inactive";
+  }
+  return "active";
 });
 
 const Session = mongoose.model("Session", sessionSchema);
