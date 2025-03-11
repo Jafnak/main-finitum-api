@@ -9,6 +9,9 @@ const setupSocketIO = (server) => {
     },
   });
 
+  const onlineUsers = new Map(); // Store online users and their socket IDs
+  const userSessions = new Map(); // Store which session each user is in
+
   // Handle socket connections
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
@@ -47,9 +50,41 @@ const setupSocketIO = (server) => {
       }
     });
 
+    socket.on("user_online", (data) => {
+      const { email, sessionId } = data;
+      onlineUsers.set(email, socket.id);
+      userSessions.set(email, sessionId);
+
+      // Broadcast updated online users list to all connected clients
+      io.emit("online_users", Array.from(onlineUsers.keys()));
+    });
+
+    socket.on("invite_user", (data) => {
+      const { sessionId, invitedUser, invitedBy } = data;
+      const invitedSocketId = onlineUsers.get(invitedUser);
+
+      if (invitedSocketId) {
+        io.to(invitedSocketId).emit("invitation_received", {
+          sessionId,
+          invitedBy,
+          sessionName: sessions.get(sessionId)?.name || "Study Session",
+        });
+      }
+    });
+
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
+      // Remove user from online users when they disconnect
+      for (const [email, socketId] of onlineUsers.entries()) {
+        if (socketId === socket.id) {
+          onlineUsers.delete(email);
+          userSessions.delete(email);
+          break;
+        }
+      }
+      // Broadcast updated online users list
+      io.emit("online_users", Array.from(onlineUsers.keys()));
     });
   });
 

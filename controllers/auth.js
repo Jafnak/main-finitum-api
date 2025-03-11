@@ -60,4 +60,23 @@ router.post("/signup", async (req, res) => {
   //console.log(user)
   res.json({ status: "success" });
 });
+
+router.get("/user/:email", async (req, res) => {
+  try {
+    const user = await userModel.findOne({ emailid: req.params.email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json({
+      name: user.name,
+      emailid: user.emailid,
+      place: user.place,
+      interests: user.interests,
+    });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 module.exports = router;
