@@ -1,14 +1,6 @@
-const { Server } = require("socket.io");
 const Message = require("../models/message");
 
-const setupSocketIO = (server) => {
-  const io = new Server(server, {
-    cors: {
-      origin: "http://localhost:5173", // Your React app URL
-      methods: ["GET", "POST"],
-    },
-  });
-
+const setupChat = (io) => {
   const onlineUsers = new Map(); // Store online users and their socket IDs
   const userSessions = new Map(); // Store which session each user is in
 
@@ -91,4 +83,4 @@ const setupSocketIO = (server) => {
   return io;
 };
 
-module.exports = setupSocketIO;
+module.exports = setupChat;

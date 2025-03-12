@@ -1,9 +1,10 @@
 const routes = require("./routes");
 const mongoose = require("mongoose");
-
 const express = require("express");
-const http = require("http");
-const setupSocketIO = require("./websocket/chat");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const setupChat = require("./websocket/chat");
+const { initializeTicTacToe } = require("./controllers/tictactoe");
 
 const cors = require("cors");
 
@@ -14,14 +15,22 @@ const PORT = process.env.PORT || 8080;
 mongoose.connect(process.env.MONGODB_URI);
 
 const app = express();
-const server = http.createServer(app);
+const server = createServer(app);
 
 // Set up Socket.IO
-setupSocketIO(server);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
+});
+
+setupChat(io);
+initializeTicTacToe(io);
 
 app.use(cors());
 app.use(express.json());
-app.use(routes);
+app.use("/", routes);
 
 server.listen(PORT, () => {
   console.log(`server started on PORT ${PORT}`);
