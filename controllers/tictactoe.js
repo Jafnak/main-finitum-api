@@ -67,6 +67,7 @@ const initializeTicTacToe = (io) => {
           console.log("Game ready to start:", sessionId);
           io.to(sessionId).emit("gameReady", {
             players: game.players,
+            currentPlayer: game.currentPlayer,
           });
           game.status = "playing";
         }
@@ -114,13 +115,26 @@ const initializeTicTacToe = (io) => {
       // Make move
       game.board[index] = symbol;
 
+      // Switch turns
+      game.currentPlayer = game.currentPlayer === "X" ? "O" : "X";
+
+      // Log the current state for debugging
+      console.log("Current game state:", {
+        currentPlayer: game.currentPlayer,
+        lastMoveBy: symbol,
+        board: game.board,
+      });
+
       // Broadcast the move to all players
       io.to(sessionId).emit("gameMove", {
         index,
         symbol,
-        currentPlayer: game.currentPlayer === "X" ? "O" : "X",
+        currentPlayer: game.currentPlayer,
+        board: game.board,
       });
-      console.log(`Broadcasting move: ${index} ${symbol}`);
+      console.log(
+        `Broadcasting move: ${index} ${symbol}, next player: ${game.currentPlayer}`
+      );
 
       // Check for winner
       const winner = checkWinner(game.board);
@@ -137,9 +151,6 @@ const initializeTicTacToe = (io) => {
         game.status = "ended";
         io.to(sessionId).emit("gameDraw");
         console.log("Game ended in draw");
-      } else {
-        // Switch turns
-        game.currentPlayer = game.currentPlayer === "X" ? "O" : "X";
       }
     });
 
