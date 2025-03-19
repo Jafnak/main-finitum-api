@@ -65,11 +65,18 @@ const initializeTicTacToe = (io) => {
         // If game is now full, notify all players
         if (game.players.length === 2) {
           console.log("Game ready to start:", sessionId);
+          game.currentPlayer = "X"; // Ensure X starts first
+          game.status = "playing";
           io.to(sessionId).emit("gameReady", {
             players: game.players,
             currentPlayer: game.currentPlayer,
+            board: game.board,
           });
-          game.status = "playing";
+          console.log("Game state on ready:", {
+            players: game.players,
+            currentPlayer: game.currentPlayer,
+            status: game.status,
+          });
         }
       } else {
         // Join as spectator
@@ -102,7 +109,10 @@ const initializeTicTacToe = (io) => {
       // Validate it's the player's turn
       const player = game.players.find((p) => p.socketId === socket.id);
       if (!player || player.symbol !== game.currentPlayer) {
-        console.log("Not player's turn or invalid player");
+        console.log("Not player's turn or invalid player:", {
+          playerSymbol: player?.symbol,
+          currentTurn: game.currentPlayer,
+        });
         return;
       }
 
@@ -118,13 +128,6 @@ const initializeTicTacToe = (io) => {
       // Switch turns
       game.currentPlayer = game.currentPlayer === "X" ? "O" : "X";
 
-      // Log the current state for debugging
-      console.log("Current game state:", {
-        currentPlayer: game.currentPlayer,
-        lastMoveBy: symbol,
-        board: game.board,
-      });
-
       // Broadcast the move to all players
       io.to(sessionId).emit("gameMove", {
         index,
@@ -132,9 +135,12 @@ const initializeTicTacToe = (io) => {
         currentPlayer: game.currentPlayer,
         board: game.board,
       });
-      console.log(
-        `Broadcasting move: ${index} ${symbol}, next player: ${game.currentPlayer}`
-      );
+
+      console.log("Game state after move:", {
+        board: game.board,
+        currentPlayer: game.currentPlayer,
+        lastMoveBy: symbol,
+      });
 
       // Check for winner
       const winner = checkWinner(game.board);
@@ -221,7 +227,7 @@ function checkWinner(board) {
   return null;
 }
 
-// REST endpoints (keeping these for compatibility)
+// REST endpoints
 router.post("/games", async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -248,17 +254,18 @@ router.post("/games", async (req, res) => {
 router.get("/games/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const gameState = games.get(sessionId);
-
-    if (!gameState) {
+    const game = games.get(sessionId);
+    if (!game) {
       return res.status(404).json({ error: "Game not found" });
     }
-
-    res.json(gameState);
+    res.json(game);
   } catch (error) {
     console.error("Error fetching game:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-module.exports = { router, initializeTicTacToe };
+module.exports = {
+  router,
+  initializeTicTacToe,
+};
